@@ -16,4 +16,11 @@ public interface BankRegexSearchConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "requireTerminator",
+		name = "Require Terminating /",
+		description = "Forces queries to require a trailing slash"
+	)
+	default boolean requireTerminator() { return false; }
 }
