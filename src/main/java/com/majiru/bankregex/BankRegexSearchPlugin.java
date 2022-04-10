@@ -83,6 +83,20 @@ public class BankRegexSearchPlugin extends Plugin
 		return configManager.getConfig(BankRegexSearchConfig.class);
 	}
 
+	@Override
+	public void resetConfiguration()
+	{
+		List<String> keys = configmanager.getConfigurationKeys(CONFIG_GROUP+".bookmark_");
+		for (String key : keys)
+		{
+			String[] str = key.split("\\.", 2);
+			if (str.length == 2)
+			{
+				configmanager.unsetConfiguration(str[0], str[1]);
+			}
+		}
+	}
+
 	private Optional<String> clean(final String query)
 	{
 		if (!query.startsWith("/") || query.length() < 2)
