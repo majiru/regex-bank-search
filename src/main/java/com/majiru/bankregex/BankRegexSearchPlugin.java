@@ -285,7 +285,7 @@ public class BankRegexSearchPlugin extends Plugin
 			return;
 		}
 
-		client.setVar(VarClientStr.INPUT_TEXT, query);
+		client.setVarcStrValue(VarClientStr.INPUT_TEXT, query);
 		client.runScript(scriptArgs);
 		Widget searchBackground = client.getWidget(WidgetInfo.BANK_SEARCH_BUTTON_BACKGROUND);
 		searchBackground.setSpriteId(SpriteID.EQUIPMENT_SLOT_TILE);
