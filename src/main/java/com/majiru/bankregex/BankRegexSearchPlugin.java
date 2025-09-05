@@ -174,12 +174,13 @@ public class BankRegexSearchPlugin extends Plugin
 		}
 
 		int[] intStack = client.getIntStack();
-		String[] stringStack = client.getStringStack();
+		Object[] stringStack = client.getObjectStack();
 		int intStackSize = client.getIntStackSize();
-		int stringStackSize = client.getStringStackSize();
+		int stringStackSize = client.getObjectStackSize();
 
 		int itemId = intStack[intStackSize - 1];
-		String search = stringStack[stringStackSize - 1];
+		String search = stringStack[stringStackSize - 1].toString();
+        log.debug(search);
 		if (bookmark != null)
 		{
 			if (bookmarkSearch(itemId))
