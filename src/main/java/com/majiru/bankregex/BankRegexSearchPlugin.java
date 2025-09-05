@@ -8,22 +8,19 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.InventoryID;
-import net.runelite.api.MenuAction;
-import net.runelite.api.MenuEntry;
-import net.runelite.api.ScriptID;
-import net.runelite.api.SpriteID;
-import net.runelite.api.VarClientStr;
+import net.runelite.api.*;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.events.ScriptPreFired;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.InventoryID;
+import net.runelite.api.gameval.SpriteID;
+import net.runelite.api.gameval.VarClientID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.chatbox.ChatboxPanelManager;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
@@ -60,7 +57,8 @@ public class BankRegexSearchPlugin extends Plugin
 	private static final String CONFIG_GROUP = "regexbanksearch";
 
 	@AllArgsConstructor
-	class Query
+    static
+    class Query
 	{
 		String name;
 		String search;
@@ -114,7 +112,7 @@ public class BankRegexSearchPlugin extends Plugin
 	private boolean search(Query q, final int itemId, final String str)
 	{
 		final Optional<String> userQuery = clean(str);
-		if (!userQuery.isPresent())
+		if (userQuery.isEmpty())
 		{
 			return false;
 		}
@@ -133,12 +131,8 @@ public class BankRegexSearchPlugin extends Plugin
 				q.pattern = null;
 			}
 		}
-		if (q.pattern != null && q.pattern.matcher(name).find(0))
-		{
-			return true;
-		}
-		return false;
-	}
+        return q.pattern != null && q.pattern.matcher(name).find(0);
+    }
 
 	private boolean bookmarkSearch(final int itemId)
 	{
@@ -202,7 +196,7 @@ public class BankRegexSearchPlugin extends Plugin
 			return;
 		}
 		boolean bankOpen = client.getItemContainer(InventoryID.BANK) != null;
-		if (client.getItemContainer(InventoryID.BANK) != null)
+		if (bankOpen)
 		{
 			client.getIntStack()[client.getIntStackSize() - 1] = 1; // true
 		}
@@ -211,7 +205,7 @@ public class BankRegexSearchPlugin extends Plugin
 	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		Widget bankSettings = client.getWidget(WidgetInfo.BANK_SETTINGS_BUTTON);
+		Widget bankSettings = client.getWidget(InterfaceID.Bankmain.MENU_BUTTON);
 		if (bankSettings == null || bankSettings.isHidden())
 		{
 			return;
@@ -229,7 +223,7 @@ public class BankRegexSearchPlugin extends Plugin
 		{
 			return;
 		}
-		Widget bankContainer = client.getWidget(WidgetInfo.BANK_ITEM_CONTAINER);
+		Widget bankContainer = client.getWidget(InterfaceID.Bankmain.ITEMS_CONTAINER);
 		if (bankContainer == null || bankContainer.isHidden())
 		{
 			return;
@@ -255,7 +249,7 @@ public class BankRegexSearchPlugin extends Plugin
 				clientThread.invoke(() ->
 					{
 						String name = newValue.replaceAll("[<>/]]", "");
-						if (name.length() == 0)
+						if (name.isEmpty())
 						{
 							return;
 						}
@@ -272,8 +266,8 @@ public class BankRegexSearchPlugin extends Plugin
 	private void layoutBank(final String query)
 	{
 		//A blank query indicates that we are resetting.
-		filtering = !query.equals("");
-		Widget bankContainer = client.getWidget(WidgetInfo.BANK_ITEM_CONTAINER);
+		filtering = !query.isEmpty();
+		Widget bankContainer = client.getWidget(InterfaceID.Bankmain.ITEMS);
 		if (bankContainer == null || bankContainer.isHidden())
 		{
 			return;
@@ -285,16 +279,21 @@ public class BankRegexSearchPlugin extends Plugin
 			return;
 		}
 
-		client.setVarcStrValue(VarClientStr.INPUT_TEXT, query);
+        client.setVarcStrValue(VarClientID.MESLAYERINPUT, query);
 		client.runScript(scriptArgs);
-		Widget searchBackground = client.getWidget(WidgetInfo.BANK_SEARCH_BUTTON_BACKGROUND);
-		searchBackground.setSpriteId(SpriteID.EQUIPMENT_SLOT_TILE);
+        Widget searchBackground = client.getWidget(InterfaceID.Bankmain.SEARCH);
+        if (searchBackground == null)
+        {
+            return;
+        }
+		searchBackground.setSpriteId(SpriteID.Miscgraphics.EQUIPMENT_SLOT_TILE);
 	}
 
 	//must be called from clientThread
 	private void buildMenus()
 	{
-		client.createMenuEntry(-1)
+        Menu menu = client.getMenu();
+		menu.createMenuEntry(-1)
 			.setOption("Add regex bookmark")
 			.setIdentifier(1)
 			.setType(MenuAction.RUNELITE)
@@ -312,7 +311,7 @@ public class BankRegexSearchPlugin extends Plugin
 				return true;
 			}).collect(Collectors.toList());
 
-			client.createMenuEntry(-1)
+			menu.createMenuEntry(-1)
 				.setOption("Delete " + bookmark.name)
 				.setType(MenuAction.RUNELITE)
 				.onClick(e ->
@@ -325,7 +324,7 @@ public class BankRegexSearchPlugin extends Plugin
 		for (String key : keys)
 		{
 			String[] str = key.split("_", 2);
-			client.createMenuEntry(-1)
+			menu.createMenuEntry(-1)
 				.setOption(str[1])
 				.setType(MenuAction.RUNELITE)
 				.onClick(e ->
@@ -343,7 +342,7 @@ public class BankRegexSearchPlugin extends Plugin
 		{
 			return;
 		}
-		client.createMenuEntry(-1)
+		menu.createMenuEntry(-1)
 			.setOption("Close bookmark")
 			.setType(MenuAction.RUNELITE)
 			.onClick(e ->
